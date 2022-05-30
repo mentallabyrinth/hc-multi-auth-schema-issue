@@ -6,6 +6,7 @@ public static class GraphQlService
     {
         services
             .AddGraphQLServer()
+            .AddAuthorization()
             .AddQueryType<Query>();
         
         return services;

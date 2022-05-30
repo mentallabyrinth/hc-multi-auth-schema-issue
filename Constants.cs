@@ -11,5 +11,6 @@ public class Constants
     public static class Policies
     {
         public const string SharedSchemas = nameof(SharedSchemas);
+        public const string JustBearerTwo = nameof(JustBearerTwo);
     }
 }

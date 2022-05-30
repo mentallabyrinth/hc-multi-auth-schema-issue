@@ -39,4 +39,15 @@ public class DemoController : Controller
     {
         return Ok("Shared");
     }
+
+    /// <summary>
+    /// JWT using the "JustBearerTwo" authorization policy
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Policy = Constants.Policies.JustBearerTwo)]
+    [HttpGet("four")]
+    public IActionResult GetSecretFour()
+    {
+        return Ok("Using policy");
+    }
 }

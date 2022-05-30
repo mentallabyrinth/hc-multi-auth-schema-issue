@@ -15,7 +15,6 @@ var jwtSettings = jwtSettingsConfig.Get<JwtSettings>();
 builder.Services.Configure<JwtSettings>(options => jwtSettingsConfig.Bind(options));
 
 // Add services to the container.
-builder.Services.AddGraphQl();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -80,12 +79,20 @@ builder.Services.AddAuthentication(options =>
     }
 );
 
+builder.Services.AddGraphQl();
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(Constants.Policies.SharedSchemas, policyBuilder =>
     {
         policyBuilder
             .AddAuthenticationSchemes(Constants.Token.BearerOne, Constants.Token.BearerTwo)
+            .RequireAuthenticatedUser();
+    });
+    
+    options.AddPolicy(Constants.Policies.JustBearerTwo, policyBuilder =>
+    {
+        policyBuilder.AddAuthenticationSchemes(Constants.Token.BearerTwo)
             .RequireAuthenticatedUser();
     });
 });
