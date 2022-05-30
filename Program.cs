@@ -25,8 +25,12 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Multiple Token Example",
-        Description = "API that uses multiple JWT tokens",
-        Version = "v1"
+        Description = "API multi token demonstration used to show Hot Chocolate's lack of support for multiple authorization schemas. The REST API showing NET6 support for multiple authorization schemas is provided in addition to the HC GraphQL configuration available at /graphql",
+        Version = "v1",
+        Contact = new OpenApiContact
+        {
+            
+        }
     });
     
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
