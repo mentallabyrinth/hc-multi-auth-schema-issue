@@ -7,8 +7,9 @@ public static class GraphQlService
         services
             .AddGraphQLServer()
             .AddAuthorization()
+            .AddHttpRequestInterceptor<HttpRequestInterceptor>()
             .AddQueryType<Query>();
-        
+
         return services;
     }
 }
