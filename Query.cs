@@ -1,5 +1,5 @@
 using Authentication.Models;
-using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Authorization;
 
 namespace Authentication;
 

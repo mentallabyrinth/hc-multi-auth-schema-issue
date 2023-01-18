@@ -13,8 +13,9 @@
     </PropertyGroup>
     
     <ItemGroup>
-        <PackageReference Include="HotChocolate.AspNetCore" Version="13.0.0-preview.52" />
-        <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.0.0-preview.52" />
+        <PackageReference Include="HotChocolate.AspNetCore" Version="13.0.0-preview.103" />
+        <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.0.0-preview.103" />
+        <PackageReference Include="HotChocolate.Authorization" Version="13.0.0-preview.103" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.5" />
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.18.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
