@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
@@ -13,8 +14,11 @@ using Path = System.IO.Path;
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettingsConfig = builder.Configuration.GetSection("Jwt");
+
 var jwtSettings = jwtSettingsConfig.Get<JwtSettings>();
 builder.Services.Configure<JwtSettings>(options => jwtSettingsConfig.Bind(options));
+builder.Services.AddSingleton(context =>
+    context.GetRequiredService<IOptions<JwtSettings>>().Value);
 
 // Add services to the container.
 
