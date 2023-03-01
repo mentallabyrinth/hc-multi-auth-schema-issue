@@ -50,4 +50,15 @@ public class DemoController : Controller
     {
         return Ok("Using policy");
     }
+
+    /// <summary>
+    /// Authorization using schemas instead of policies.
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(AuthenticationSchemes = Constants.Policies.SharedSchemas)]
+    [HttpGet("five")]
+    public IActionResult UsingAuthorizationSchema()
+    {
+        return Ok("Using authorization schema success");
+    }
 }

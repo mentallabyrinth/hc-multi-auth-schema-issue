@@ -1,9 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Text;
 using Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Path = System.IO.Path;
@@ -77,9 +79,30 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.AudienceTwoKey))
         };
     }
-);
+)
+// Note: only works with .NETCore (AuthenticationSchemes) API and not Hot Chocolate 
+.AddPolicyScheme(Constants.Policies.SharedSchemas, Constants.Token.BearerOne, options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        var authorization = context.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
+        
+        if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
+            return Constants.Token.BearerOne;
+        
+        var token = authorization.Substring("Bearer ".Length).Trim();
+        var jwtHandler = new JwtSecurityTokenHandler();
 
-builder.Services.AddGraphQl();
+        var audience = jwtHandler.CanReadToken(token)
+            ? jwtHandler.ReadJwtToken(token).Audiences.FirstOrDefault()
+            : null; 
+            
+        return audience == "admin:app"
+            ? "Testing"
+            : Constants.Token.BearerTwo;
+
+    };
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -92,10 +115,15 @@ builder.Services.AddAuthorization(options =>
     
     options.AddPolicy(Constants.Policies.JustBearerTwo, policyBuilder =>
     {
-        policyBuilder.AddAuthenticationSchemes(Constants.Token.BearerTwo)
+        policyBuilder
+            .AddAuthenticationSchemes(Constants.Token.BearerOne, Constants.Token.BearerTwo)
             .RequireAuthenticatedUser();
     });
+    
+    
 });
+
+builder.Services.AddGraphQl();
 
 builder.Services.AddHealthChecks();
 
@@ -109,13 +137,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
-app.MapGraphQL();
-app.MapHealthChecks("/health");
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHealthChecks("/health");
+    endpoints.MapControllers();
+    endpoints.MapGraphQL();
+});
 
 app.Run();

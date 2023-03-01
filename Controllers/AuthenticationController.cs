@@ -38,7 +38,7 @@ public class AuthenticationController : Controller
             new (JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Sid, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Iat,  EpochTime.GetIntDate(nowUtc).ToString(), ClaimValueTypes.Integer64),
-            new (JwtRegisteredClaimNames.UniqueName, "test", ClaimValueTypes.String)
+            new (JwtRegisteredClaimNames.UniqueName, nameof(AuthenticateOne), ClaimValueTypes.String)
         };
 
         var symmetricKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtSettings.AudienceOneKey));
@@ -74,7 +74,7 @@ public class AuthenticationController : Controller
             new (JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Sid, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Iat,  EpochTime.GetIntDate(nowUtc).ToString(), ClaimValueTypes.Integer64),
-            new (JwtRegisteredClaimNames.UniqueName, "test", ClaimValueTypes.String)
+            new (JwtRegisteredClaimNames.UniqueName, nameof(AuthenticateTwo), ClaimValueTypes.String)
         };
 
         var symmetricKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtSettings.AudienceTwoKey));
