@@ -26,9 +26,12 @@ public class CustomHttpRequestInterceptor : DefaultHttpRequestInterceptor
         var tokenDecoded = _jwtHandler.CanReadToken(tokenEncoded) 
             ? _jwtHandler.ReadJwtToken(tokenEncoded) 
             : null;
-        
+
         if (tokenDecoded is null)
+        {
             await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
+            return;
+        }
 
         var audience = tokenDecoded?.Audiences.FirstOrDefault();
 
@@ -39,7 +42,10 @@ public class CustomHttpRequestInterceptor : DefaultHttpRequestInterceptor
                 : null;
 
         if (authorizationSchema is null)
+        {
             await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
+            return;
+        }
 
         await context.AuthenticateAsync(authorizationSchema);
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
