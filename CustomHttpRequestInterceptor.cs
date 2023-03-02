@@ -9,11 +9,13 @@ namespace Authentication;
 public class CustomHttpRequestInterceptor : DefaultHttpRequestInterceptor
 {
     private readonly JwtSettings _jwtSettings;
+    private readonly ILogger<CustomHttpRequestInterceptor> _logger;
     private readonly JwtSecurityTokenHandler _jwtHandler;
 
-    public CustomHttpRequestInterceptor(JwtSettings jwtSettings)
+    public CustomHttpRequestInterceptor(JwtSettings jwtSettings, ILogger<CustomHttpRequestInterceptor> logger)
     {
         _jwtSettings = jwtSettings;
+        _logger = logger;
         _jwtHandler = new JwtSecurityTokenHandler();
     }
     
@@ -28,26 +30,32 @@ public class CustomHttpRequestInterceptor : DefaultHttpRequestInterceptor
             : null;
 
         if (tokenDecoded is null)
-        {
+        { 
             await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
             return;
         }
 
         var audience = tokenDecoded?.Audiences.FirstOrDefault();
 
-        var authorizationSchema = audience == _jwtSettings.AudienceOne 
+        var authenticationSchema = audience == _jwtSettings.AudienceOne 
             ? Constants.Token.BearerOne 
             : audience == _jwtSettings.AudienceTwo 
                 ? Constants.Token.BearerTwo 
                 : null;
 
-        if (authorizationSchema is null)
+        if (authenticationSchema is null)
         {
             await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
             return;
         }
 
-        await context.AuthenticateAsync(authorizationSchema);
+        var result = await context.AuthenticateAsync(authenticationSchema);
+        if (result.Succeeded)
+        {
+            _logger.LogInformation("Authentication succeeded with schema {Schema} found using audience {Audience}", 
+                authenticationSchema, audience);
+        }
+        
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 }

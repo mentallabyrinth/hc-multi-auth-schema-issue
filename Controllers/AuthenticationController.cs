@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -74,7 +72,8 @@ public class AuthenticationController : Controller
             new (JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Sid, Guid.NewGuid().ToString(), ClaimValueTypes.String),
             new (JwtRegisteredClaimNames.Iat,  EpochTime.GetIntDate(nowUtc).ToString(), ClaimValueTypes.Integer64),
-            new (JwtRegisteredClaimNames.UniqueName, nameof(AuthenticateTwo), ClaimValueTypes.String)
+            new (JwtRegisteredClaimNames.UniqueName, nameof(AuthenticateTwo), ClaimValueTypes.String),
+            new ("role", "standard", ClaimValueTypes.String)
         };
 
         var symmetricKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtSettings.AudienceTwoKey));

@@ -1,8 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -51,12 +53,14 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 
-builder.Services.AddAuthentication(options => 
-    { 
-        options.DefaultScheme = Constants.Token.BearerOne; 
-    }
-).AddJwtBearer(Constants.Token.BearerOne, options =>
+builder.Services.AddAuthentication(options =>
     {
+        options.DefaultScheme = "CombinedSchemas";
+        options.DefaultAuthenticateScheme = "CombinedSchemas";
+    })
+    .AddJwtBearer(Constants.Token.BearerOne, options =>
+    {
+        options.SaveToken = true;
         options.Audience = jwtSettings.AudienceOne;
         options.ClaimsIssuer = jwtSettings.Issuer;
         options.TokenValidationParameters = new TokenValidationParameters
@@ -68,9 +72,10 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.AudienceOneKey))
         };
-    }
-).AddJwtBearer(Constants.Token.BearerTwo, options =>
+    })
+    .AddJwtBearer(Constants.Token.BearerTwo, options =>
     {
+        options.SaveToken = true;
         options.Audience = jwtSettings.AudienceTwo;
         options.ClaimsIssuer = jwtSettings.Issuer;
         options.TokenValidationParameters = new TokenValidationParameters
@@ -82,34 +87,42 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.AudienceTwoKey))
         };
-    }
-)
-// Note: only works with .NETCore (AuthenticationSchemes) API and not Hot Chocolate 
-.AddPolicyScheme(Constants.Policies.SharedSchemas, Constants.Token.BearerOne, options =>
-{
-    options.ForwardDefaultSelector = context =>
+    })
+    // Note: only works with .NETCore (AuthenticationSchemes) API and not Hot Chocolate 
+    .AddPolicyScheme("CombinedSchemas", "CombinedSchemas", options =>
     {
-        var authorization = context.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
-        
-        if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
-            return Constants.Token.BearerOne;
-        
-        var token = authorization.Substring("Bearer ".Length).Trim();
-        var jwtHandler = new JwtSecurityTokenHandler();
-
-        var audience = jwtHandler.CanReadToken(token)
-            ? jwtHandler.ReadJwtToken(token).Audiences.FirstOrDefault()
-            : null; 
+        options.ForwardDefaultSelector = context =>
+        {
+            var authorization = context.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
             
-        return audience == "admin:app"
-            ? "Testing"
-            : Constants.Token.BearerTwo;
+            if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
+                return Constants.Token.BearerOne;
+            
+            var token = authorization["Bearer ".Length..].Trim();
+            var jwtHandler = new JwtSecurityTokenHandler();
 
-    };
-});
+            var audience = jwtHandler.CanReadToken(token)
+                ? jwtHandler.ReadJwtToken(token).Audiences.FirstOrDefault()
+                : null;
+
+            return audience == jwtSettings.AudienceOne 
+                ? Constants.Token.BearerOne 
+                : audience == jwtSettings.AudienceTwo 
+                    ? Constants.Token.BearerTwo 
+                    : Constants.Token.BearerOne;
+        };
+    });
 
 builder.Services.AddAuthorization(options =>
 {
+    var defaultPolicyBuilder = new AuthorizationPolicyBuilder(
+        Constants.Token.BearerOne, 
+        Constants.Token.BearerTwo);
+
+    options.DefaultPolicy = defaultPolicyBuilder
+        .RequireAuthenticatedUser()
+        .Build();
+    
     options.AddPolicy(Constants.Policies.SharedSchemas, policyBuilder =>
     {
         policyBuilder
@@ -119,8 +132,20 @@ builder.Services.AddAuthorization(options =>
     
     options.AddPolicy(Constants.Policies.JustBearerTwo, policyBuilder =>
     {
+        // When the authentication token is read the claim names are transformed (mapped) to support open ID connect
+        // see: https://learn.microsoft.com/en-us/aspnet/core/security/authentication/claims?view=aspnetcore-6.0
+        // Don't fully understand the purpose for this, but moving on. This means that is there's a claim "role"
+        // the name is changed to "http://schemas.microsoft.com/ws/2008/06/identity/claims/role." Because of
+        // this using "role" will not work. The fully qualified value is found in the `ClaimTypes.Role`
+        // constant and is the reason for its use below. Yes, this map can be cleared, but decided to
+        // leave it as is for the learning experience. To clear the map use:
+        // JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+        //
+        // Note: all mapped claim types can be found using the following link:
+        // https://learn.microsoft.com/en-us/dotnet/api/system.security.claims.claimtypes?view=net-7.0
         policyBuilder
-            .AddAuthenticationSchemes(Constants.Token.BearerOne, Constants.Token.BearerTwo)
+            .AddAuthenticationSchemes(Constants.Token.BearerTwo)
+            .RequireClaim(ClaimTypes.Role, "standard")
             .RequireAuthenticatedUser();
     });
     
